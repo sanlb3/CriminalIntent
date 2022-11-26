@@ -2,8 +2,10 @@ package com.bignerdranch.android.criminalintent
 
 import android.content.Context
 import android.os.Bundle
+import android.text.format.DateFormat
 import android.util.Log
 import android.view.*
+import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.fragment.app.Fragment
@@ -97,14 +99,25 @@ class CrimeListFragment : Fragment() {
     }
 
     private fun updateUI(crimes: List<Crime>) {
-        adapter = CrimeAdapter(crimes)
-        crimeRecyclerView.adapter = adapter
+        //val crimes = crimeListViewModel.crimes
+        when (crimes.size) {
+            0    -> {
+                val adapter = EmptyCrimeAdapter()
+                crimeRecyclerView.adapter = adapter
+            }
+            else -> {
+                adapter = CrimeAdapter(crimes)
+                crimeRecyclerView.adapter = adapter
+            }
+        }
     }
-
     private inner class CrimeHolder(view: View)
         : RecyclerView.ViewHolder(view), View.OnClickListener {
 
         private lateinit var crime: Crime
+
+        private val emptyList: TextView = itemView.findViewById(R.id.empty_crime_list)
+        private val newCrimeButton: Button = itemView.findViewById(R.id.new_crime_button)
 
         private val titleTextView: TextView = itemView.findViewById(R.id.crime_title)
         private val dateTextView: TextView = itemView.findViewById(R.id.crime_date)
@@ -117,11 +130,26 @@ class CrimeListFragment : Fragment() {
         fun bind(crime: Crime) {
             this.crime = crime
             titleTextView.text = this.crime.title
-            dateTextView.text = this.crime.date.toString()
+            dateTextView.text = DateFormat.format("EEE dd MMM yyyy, hh:mm a", this.crime.date)
             solvedImageView.visibility = if (crime.isSolved) {
                 View.VISIBLE
             } else {
                 View.GONE
+            }
+
+        }
+
+        fun bind() {
+            Log.i(TAG, "5")
+            titleTextView.visibility = View.GONE
+            dateTextView.visibility = View.GONE
+            solvedImageView.visibility = View.GONE
+            emptyList.visibility = View.VISIBLE
+            newCrimeButton.visibility = View.VISIBLE
+            newCrimeButton.setOnClickListener {
+                val crime = Crime()
+                crimeListViewModel.addCrime(crime)
+                callbacks?.onCrimeSelected(crime.id)
             }
         }
 
@@ -129,6 +157,19 @@ class CrimeListFragment : Fragment() {
             callbacks?.onCrimeSelected(crime.id)
         }
 
+    }
+
+    private inner class EmptyCrimeAdapter : RecyclerView.Adapter<CrimeHolder>() {
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CrimeHolder {
+            val view = layoutInflater.inflate(R.layout.list_item_crime, parent, false)
+            return CrimeHolder(view)
+        }
+        override fun getItemCount(): Int {
+            return 1
+        }
+        override fun onBindViewHolder(holder: CrimeHolder, position: Int) {
+            holder.bind()
+        }
     }
 
     private inner class CrimeAdapter(var crimes: List<Crime>)
